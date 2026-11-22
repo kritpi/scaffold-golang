@@ -162,7 +162,7 @@ import (
 )
 
 type Config struct {
-	WidgetCollection string // e.g. "go-mail-widget"
+	WidgetCollection string // e.g. "widgets"
 }
 
 type Repo struct {
