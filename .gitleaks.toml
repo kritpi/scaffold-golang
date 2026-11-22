@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "local dev keypair from make dev-auth; git-ignored"
+paths = ['''(^|/)\.auth/''']

@@ -1,0 +1,60 @@
+name: scaffold
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: scaffold
+      POSTGRES_PASSWORD: scaffold
+      POSTGRES_DB: scaffold
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scaffold -d scaffold"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports: ["6379:6379"]
+    volumes: [redisdata:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  migrate:
+    image: migrate/migrate:v4.19.1
+    volumes: ["./db/postgres/migrations:/migrations:ro"]
+    command: ["-path=/migrations", "-database=postgres://scaffold:scaffold@postgres:5432/scaffold?sslmode=disable", "up"]
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  server:
+    build: .
+    ports: ["8080:8080"]
+    environment:
+      SERVICE_NAME: scaffold-api
+      PORT: "8080"
+      LOG_JSON: "true"
+      REQUEST_TIMEOUT: 10s
+      GIN_MODE: release
+      API_TIME_ZONE: Asia/Bangkok
+      AUTH_JWT_PUBLIC_KEY_FILE: /run/secrets/jwt.pub
+      AUTH_JWT_ISSUER: scaffold-dev
+      AUTH_JWT_AUDIENCE: scaffold-api
+      POSTGRES_DSN: postgres://scaffold:scaffold@postgres:5432/scaffold?sslmode=disable
+      REDIS_ADDR: redis:6379
+      WIDGET_CACHE_TTL: 5m
+    volumes: ["./.auth/dev.pub:/run/secrets/jwt.pub:ro"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+
+volumes:
+  pgdata:
+  redisdata:
