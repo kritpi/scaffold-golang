@@ -1,0 +1,8 @@
+/bin/
+coverage.out
+*.secret
+.env.secret
+service-account*.json
+.idea/
+.DS_Store
+/.auth/
